@@ -131,6 +131,10 @@ function App() {
       if (raw.startsWith('TOOL_NOT_INSTALLED|')) {
         return t('errors.toolNotInstalled')
       }
+      if (raw.startsWith('TOOL_NOT_WRITABLE|')) {
+        const parts = raw.split('|')
+        return t('errors.toolNotWritable', { tool: parts[1] ?? '', path: parts[2] ?? '' })
+      }
       if (raw.includes('未在该仓库中发现可导入的 Skills')) {
         return t('errors.noSkillsFoundInRepo')
       }
@@ -1580,7 +1584,7 @@ function App() {
             })
           } catch (err) {
             const raw = err instanceof Error ? err.message : String(err)
-            if (raw.startsWith('TOOL_NOT_INSTALLED|')) continue
+            if (raw.startsWith('TOOL_NOT_INSTALLED|') || raw.startsWith('TOOL_NOT_WRITABLE|')) continue
             collectedErrors.push({
               title: t('errors.syncFailedTitle', {
                 name: skill.name,
@@ -1670,8 +1674,10 @@ function App() {
           const targetPath = raw.split('|')[1] ?? ''
           setError(t('errors.targetExistsDetail', { path: targetPath }))
         } else if (raw.startsWith('TOOL_NOT_INSTALLED|')) {
-          // Tool disappeared between detection and click; silently refresh.
           setError(t('errors.toolNotInstalled'))
+        } else if (raw.startsWith('TOOL_NOT_WRITABLE|')) {
+          const parts = raw.split('|')
+          setError(t('errors.toolNotWritable', { tool: parts[1] ?? '', path: parts[2] ?? '' }))
         } else {
           setError(raw)
         }

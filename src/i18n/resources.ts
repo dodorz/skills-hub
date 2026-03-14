@@ -166,6 +166,8 @@ export const resources = {
         targetExistsDetail:
           'Target folder already exists: {{path}}. For safety it was not overwritten.',
         toolNotInstalled: 'The selected tool is not installed. Please refresh and retry.',
+        toolNotWritable:
+          'Cannot sync to {{tool}}: permission denied on {{path}}. Please check directory permissions or run as administrator.',
         noSkillsFoundInRepo: 'No skills found in this repository.',
         requireLocalPath: 'Please enter a local path.',
         requireGitUrl: 'Please enter a Git repository URL.',
@@ -456,6 +458,8 @@ export const resources = {
         targetExistsDetail:
           '目标目录已存在同名 Skill：{{path}}。为安全起见未覆盖。\n你可以：先手动清理该目录后重试。',
         toolNotInstalled: '未检测到该工具已安装，请刷新后重试。',
+        toolNotWritable:
+          '无法同步到 {{tool}}：目录 {{path}} 权限不足。请检查目录权限或以管理员身份运行。',
         noSkillsFoundInRepo: '该仓库未发现可导入的 Skills。',
         requireLocalPath: '请输入本地路径',
         requireGitUrl: '请输入 Git 仓库地址',

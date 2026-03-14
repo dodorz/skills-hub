@@ -486,6 +486,17 @@ pub async fn sync_skill_to_tool(
             anyhow::bail!("TOOL_NOT_INSTALLED|{}", adapter.id.as_key());
         }
         let tool_root = resolve_default_path(&adapter)?;
+        // Pre-check: ensure the skills directory is writable (fixes #20 — Windows OS error 5).
+        if let Err(err) = std::fs::create_dir_all(&tool_root) {
+            if err.kind() == std::io::ErrorKind::PermissionDenied {
+                anyhow::bail!(
+                    "TOOL_NOT_WRITABLE|{}|{}",
+                    adapter.display_name,
+                    tool_root.to_string_lossy()
+                );
+            }
+            anyhow::bail!("failed to create skills dir {:?}: {}", tool_root, err);
+        }
         let target = tool_root.join(&name);
         let overwrite = overwrite.unwrap_or(false);
         let result =
@@ -494,6 +505,15 @@ pub async fn sync_skill_to_tool(
                     let msg = err.to_string();
                     if msg.contains("target already exists") {
                         anyhow::anyhow!("TARGET_EXISTS|{}", target.to_string_lossy())
+                    } else if msg.contains("os error 5")
+                        || msg.contains("Access is denied")
+                        || msg.contains("Permission denied")
+                    {
+                        anyhow::anyhow!(
+                            "TOOL_NOT_WRITABLE|{}|{}",
+                            adapter.display_name,
+                            tool_root.to_string_lossy()
+                        )
                     } else {
                         anyhow::anyhow!(msg)
                     }
