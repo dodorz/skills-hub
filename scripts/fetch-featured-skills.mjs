@@ -10,12 +10,22 @@ const CLAWHUB_DETAIL_API = 'https://clawhub.ai/api/v1/skills'
 const GITHUB_REPO = 'openclaw/skills'
 const OUTPUT_FILE = 'featured-skills.json'
 
-async function fetchJson(url) {
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'skills-hub-ci' },
-  })
-  if (!res.ok) throw new Error(`${url} returned ${res.status}`)
-  return res.json()
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+async function fetchJson(url, retries = 3) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'skills-hub-ci' },
+    })
+    if (res.status === 429 && attempt < retries) {
+      const delay = 2 ** (attempt + 1) * 1000 // 2s, 4s, 8s
+      console.warn(`Rate limited (429), retrying in ${delay / 1000}s... (${attempt + 1}/${retries})`)
+      await sleep(delay)
+      continue
+    }
+    if (!res.ok) throw new Error(`${url} returned ${res.status}`)
+    return res.json()
+  }
 }
 
 async function getOwnerHandle(slug) {
@@ -41,9 +51,9 @@ async function main() {
 
   console.log('Resolving skill owners...')
   const skills = []
-  // Process in batches of 10 for reasonable parallelism
-  for (let i = 0; i < clawSkills.length; i += 10) {
-    const batch = clawSkills.slice(i, i + 10)
+  // Process in batches of 5 to avoid rate limiting
+  for (let i = 0; i < clawSkills.length; i += 5) {
+    const batch = clawSkills.slice(i, i + 5)
     const results = await Promise.all(
       batch.map(async (s) => {
         const slug = s.slug ?? ''
@@ -64,7 +74,7 @@ async function main() {
       }),
     )
     skills.push(...results.filter(Boolean))
-    process.stdout.write(`  ${Math.min(i + 10, clawSkills.length)}/${clawSkills.length}\r`)
+    process.stdout.write(`  ${Math.min(i + 5, clawSkills.length)}/${clawSkills.length}\r`)
   }
   console.log('')
 
