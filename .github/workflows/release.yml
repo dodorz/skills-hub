@@ -360,6 +360,20 @@ jobs:
           pattern: release-assets-*
           merge-multiple: true
 
+      - name: Generate release notes from changelog
+        env:
+          TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/extract-changelog.mjs "$TAG" CHANGELOG.md > release-notes.md
+          {
+            echo
+            echo '**Windows Note:** Windows SmartScreen may show a warning during installation. This is normal for unsigned executables. The application is safe to use.'
+            echo
+            echo '**macOS Note:** macOS Gatekeeper workaround (only needed on some macOS versions): `xattr -cr "/Applications/Skills Hub.app"` (https://v2.tauri.app/distribute/#macos).'
+          } >> release-notes.md
+
       - name: Generate updater.json
         env:
           REPO: ${{ github.repository }}
@@ -396,11 +410,21 @@ jobs:
             exit 1
           fi
 
+          # Read release notes if available (generated in prior step or inline)
+          NOTES_FILE="release-notes.md"
+          if [ -f "$NOTES_FILE" ]; then
+            NOTES_CONTENT=$(cat "$NOTES_FILE")
+          else
+            NOTES_CONTENT="Release $TAG"
+          fi
+          # Escape for JSON: backslashes, double quotes, newlines
+          NOTES_JSON=$(printf '%s' "$NOTES_CONTENT" | sed 's/\\/\\\\/g; s/"/\\"/g' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
+
           tmp_json=$(mktemp)
           {
             echo '{'
             echo "  \"version\": \"$VERSION\","
-            echo "  \"notes\": \"Release $TAG\","
+            echo "  \"notes\": \"$NOTES_JSON\","
             echo "  \"pub_date\": \"$PUB_DATE\","
             echo '  "platforms": {'
             first=1
@@ -420,20 +444,6 @@ jobs:
 
           cat "$tmp_json"
           mv "$tmp_json" updater.json
-
-      - name: Generate release notes from changelog
-        env:
-          TAG: ${{ github.ref_name }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          node scripts/extract-changelog.mjs "$TAG" CHANGELOG.md > release-notes.md
-          {
-            echo
-            echo '**Windows Note:** Windows SmartScreen may show a warning during installation. This is normal for unsigned executables. The application is safe to use.'
-            echo
-            echo '**macOS Note:** macOS Gatekeeper workaround (only needed on some macOS versions): `xattr -cr "/Applications/Skills Hub.app"` (https://v2.tauri.app/distribute/#macos).'
-          } >> release-notes.md
 
       - name: Create/Update GitHub Release
         uses: softprops/action-gh-release@v2
