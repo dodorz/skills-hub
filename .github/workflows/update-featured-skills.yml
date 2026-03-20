@@ -19,6 +19,8 @@ jobs:
           node-version: 20
 
       - name: Fetch featured skills
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/fetch-featured-skills.mjs
 
       - name: Commit if changed
