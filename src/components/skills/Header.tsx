@@ -5,7 +5,7 @@ import type { TFunction } from 'i18next'
 type HeaderProps = {
   language: string
   loading: boolean
-  activeView: 'myskills' | 'explore' | 'detail'
+  activeView: 'myskills' | 'explore' | 'detail' | 'settings'
   onToggleLanguage: () => void
   onOpenSettings: () => void
   onViewChange: (view: 'myskills' | 'explore') => void
@@ -52,7 +52,7 @@ const Header = ({
         <button className="lang-btn" type="button" onClick={onToggleLanguage}>
           {language === 'en' ? t('languageShort.en') : t('languageShort.zh')}
         </button>
-        <button className="icon-btn" type="button" onClick={onOpenSettings}>
+        <button className={`icon-btn${activeView === 'settings' ? ' active' : ''}`} type="button" onClick={onOpenSettings}>
           <Settings size={18} />
         </button>
       </div>
